@@ -5,7 +5,7 @@ import logging
 from logging.handlers import BaseRotatingHandler
 from colorama import Fore
 
-from langchain.agents.agent_toolkits.openapi.spec import ReducedOpenAPISpec
+from langchain_community.agent_toolkits.openapi.spec import ReducedOpenAPISpec
 
 
 
@@ -36,13 +36,13 @@ class MyRotatingFileHandler(BaseRotatingHandler):
         if self.stream:
             self.stream.close()
             self.stream = None
-        
+
         dfn = self.rotation_filename('.'.join(self.baseFilename.split('.')[:-1]) + f"_{self.cnt}." + self.baseFilename.split('.')[-1])
         if os.path.exists(dfn):
             os.remove(dfn)
         self.rotate(self.baseFilename, dfn)
         self.cnt += 1
-        
+
         if not self.delay:
             self.stream = self._open()
 
@@ -76,7 +76,7 @@ def get_matched_endpoint(api_spec: ReducedOpenAPISpec, plan: str):
     if len(matched_endpoints) == 0:
         return None
         # raise ValueError(f"Endpoint {plan_endpoint} not found in API spec.")
-    
+
     return matched_endpoints
 
 
@@ -115,7 +115,7 @@ def fix_json_error(data: str, return_str=True):
             if data[i + 1] in [']', '}', '],', '},'] and line.endswith(','):
                 data[i] = line[:-1]
         data = " ".join(data)
-        
+
         if not return_str:
             data = json.loads(data)
         return data
