@@ -4,7 +4,7 @@ import logging
 import time
 import yaml
 
-from langchain.requests import Requests
+from langchain_community.utilities import Requests
 from langchain import OpenAI
 
 from utils import reduce_openapi_spec, ColorPrint, MyRotatingFileHandler
@@ -64,7 +64,7 @@ def main():
             print(f"Query: {query}\nError: {e}")
         finally:
             file_handler.doRollover()
-    
+
 
 if __name__ == '__main__':
     main()

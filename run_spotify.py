@@ -5,7 +5,7 @@ import time
 import yaml
 
 import spotipy
-from langchain.requests import Requests
+from langchain_community.utilities import Requests
 from langchain import OpenAI
 
 from utils import reduce_openapi_spec, ColorPrint
@@ -26,7 +26,7 @@ def main():
     log_dir = os.path.join("logs", "restgpt_spotify")
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
-        
+
     logging.basicConfig(
         format="%(message)s",
         handlers=[logging.StreamHandler(ColorPrint()), logging.FileHandler(os.path.join(log_dir, f"{query_idx}.log"), mode='w', encoding='utf-8')],
@@ -54,7 +54,7 @@ def main():
     queries = [item['query'] for item in queries]
 
     query = queries[query_idx - 1]
-    
+
     logger.info(f"Query: {query}")
 
     start_time = time.time()
