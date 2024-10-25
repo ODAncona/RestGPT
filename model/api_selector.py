@@ -4,9 +4,9 @@ import logging
 
 from langchain.chains.base import Chain
 from langchain.chains.llm import LLMChain
-from langchain.prompts.base import BasePromptTemplate
-from langchain.prompts.prompt import PromptTemplate
-from langchain.llms.base import BaseLLM
+from langchain_core.prompts import BasePromptTemplate
+from langchain_core.prompts import PromptTemplate
+from langchain_core.language_models import BaseLLM
 
 from utils import ReducedOpenAPISpec, get_matched_endpoint
 
@@ -131,11 +131,11 @@ class APISelector(Chain):
     @property
     def input_keys(self) -> List[str]:
         return ["plan", "background"]
-    
+
     @property
     def output_keys(self) -> List[str]:
         return [self.output_key]
-    
+
     @property
     def observation_prefix(self) -> str:
         """Prefix to append the observation with."""
@@ -145,14 +145,14 @@ class APISelector(Chain):
     def llm_prefix(self) -> str:
         """Prefix to append the llm call with."""
         return "API calling {}: "
-    
+
     @property
     def _stop(self) -> List[str]:
         return [
             f"\n{self.observation_prefix.rstrip()}",
             f"\n\t{self.observation_prefix.rstrip()}",
         ]
-    
+
     def _construct_scratchpad(
         self, history: List[Tuple[str, str]], instruction: str
     ) -> str:
@@ -166,7 +166,7 @@ class APISelector(Chain):
             scratchpad += self.observation_prefix + execution_res + "\n"
         scratchpad += "Instruction: " + instruction + "\n"
         return scratchpad
-    
+
     def _call(self, inputs: Dict[str, Any]) -> Dict[str, str]:
         # inputs: background, plan, (optional) history, instruction
         if 'history' in inputs:
@@ -175,7 +175,7 @@ class APISelector(Chain):
             scratchpad = ""
         api_selector_chain = LLMChain(llm=self.llm, prompt=self.api_selector_prompt)
         api_selector_chain_output = api_selector_chain.run(plan=inputs['plan'], background=inputs['background'], agent_scratchpad=scratchpad, stop=self._stop)
-        
+
         api_plan = re.sub(r"API calling \d+: ", "", api_selector_chain_output).strip()
 
         logger.info(f"API Selector: {api_plan}")
@@ -183,7 +183,7 @@ class APISelector(Chain):
         finish = re.match(r"No API call needed.(.*)", api_plan)
         if finish is not None:
             return {"result": api_plan}
-            
+
 
         while get_matched_endpoint(self.api_spec, api_plan) is None:
             logger.info("API Selector: The API you called is not in the list of available APIs. Please use another API.")

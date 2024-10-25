@@ -3,8 +3,8 @@ import re
 
 from langchain.chains.base import Chain
 from langchain.chains.llm import LLMChain
-from langchain.prompts.prompt import PromptTemplate
-from langchain.llms.base import BaseLLM
+from langchain_core.prompts import PromptTemplate
+from langchain_core.language_models import BaseLLM
 
 icl_examples = {
     "tmdb": """Example 1:
@@ -101,11 +101,11 @@ class Planner(Chain):
     @property
     def input_keys(self) -> List[str]:
         return ["input"]
-    
+
     @property
     def output_keys(self) -> List[str]:
         return [self.output_key]
-    
+
     @property
     def observation_prefix(self) -> str:
         """Prefix to append the observation with."""
@@ -115,14 +115,14 @@ class Planner(Chain):
     def llm_prefix(self) -> str:
         """Prefix to append the llm call with."""
         return "Plan step {}: "
-    
+
     @property
     def _stop(self) -> List[str]:
         return [
             f"\n{self.observation_prefix.rstrip()}",
             f"\n\t{self.observation_prefix.rstrip()}",
         ]
-    
+
     def _construct_scratchpad(
         self, history: List[Tuple[str, str]]
     ) -> str:

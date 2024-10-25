@@ -10,8 +10,8 @@ import tiktoken
 
 from langchain.chains.base import Chain
 from langchain.chains.llm import LLMChain
-from langchain.prompts.prompt import PromptTemplate
-from langchain.llms.base import BaseLLM
+from langchain_core.prompts import PromptTemplate
+from langchain_core.language_models import BaseLLM
 
 from utils import simplify_json
 
@@ -288,7 +288,7 @@ class ResponseParser(Chain):
             extract_code_chain = LLMChain(llm=self.llm, prompt=self.llm_parsing_prompt)
             output = extract_code_chain.predict(query=inputs['query'], json=inputs['json'], api_param=inputs['api_param'], response_description=inputs['response_description'])
             return {"result": output}
-        
+
         extract_code_chain = LLMChain(llm=self.llm, prompt=self.code_parsing_schema_prompt)
         code = extract_code_chain.predict(query=inputs['query'], response_description=inputs['response_description'], api_param=inputs['api_param'])
         logger.info(f"Code: \n{code}")
@@ -327,7 +327,7 @@ class ResponseParser(Chain):
 
         return {"result": output}
 
-    
+
 
 
 class SimpleResponseParser(Chain):
@@ -396,7 +396,7 @@ class SimpleResponseParser(Chain):
             extract_code_chain = LLMChain(llm=self.llm, prompt=self.llm_parsing_prompt)
             output = extract_code_chain.predict(query=inputs['query'], json=inputs['json'], api_param=inputs['api_param'], response_description=inputs['response_description'])
             return {"result": output}
-        
+
         encoded_json = self.encoder.encode(inputs["json"])
         extract_code_chain = LLMChain(llm=self.llm, prompt=self.llm_parsing_prompt)
         if len(encoded_json) > self.max_json_length:
@@ -405,4 +405,3 @@ class SimpleResponseParser(Chain):
 
         return {"result": output}
 
-    

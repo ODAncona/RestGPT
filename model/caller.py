@@ -11,9 +11,9 @@ import tiktoken
 
 from langchain.chains.base import Chain
 from langchain.chains.llm import LLMChain
-from langchain.requests import RequestsWrapper
-from langchain.prompts.prompt import PromptTemplate
-from langchain.llms.base import BaseLLM
+from langchain_community.utilities import TextRequestsWrapper
+from langchain_core.prompts import PromptTemplate
+from langchain_core.language_models import BaseLLM
 
 from utils import simplify_json, get_matched_endpoint, ReducedOpenAPISpec, fix_json_error
 from .parser import ResponseParser, SimpleResponseParser
@@ -131,11 +131,11 @@ class Caller(Chain):
     @property
     def input_keys(self) -> List[str]:
         return ["api_plan"]
-    
+
     @property
     def output_keys(self) -> List[str]:
         return [self.output_key]
-    
+
     def _should_continue(self, iterations: int, time_elapsed: float) -> bool:
         if self.max_iterations is not None and iterations >= self.max_iterations:
             return False
@@ -146,7 +146,7 @@ class Caller(Chain):
             return False
 
         return True
-    
+
     @property
     def observation_prefix(self) -> str:
         """Prefix to append the observation with."""
@@ -156,14 +156,14 @@ class Caller(Chain):
     def llm_prefix(self) -> str:
         """Prefix to append the llm call with."""
         return "Thought: "
-    
+
     @property
     def _stop(self) -> List[str]:
         return [
             f"\n{self.observation_prefix.rstrip()}",
             f"\n\t{self.observation_prefix.rstrip()}",
         ]
-    
+
     def _construct_scratchpad(
         self, history: List[Tuple[str, str]]
     ) -> str:
@@ -188,12 +188,12 @@ class Caller(Chain):
         action_input = match.group(2)
         if action not in ["GET", "POST", "DELETE", "PUT"]:
             raise NotImplementedError
-        
+
         # avoid error in the JSON format
         action_input = fix_json_error(action_input)
 
         return action, action_input
-    
+
     def _get_response(self, action: str, action_input: str) -> str:
         action_input = action_input.strip().strip('`')
         left_bracket = action_input.find('{')
@@ -203,7 +203,7 @@ class Caller(Chain):
             data = json.loads(action_input)
         except json.JSONDecodeError as e:
             raise e
-        
+
         desc = data.get("description", "No description")
         query = data.get("output_instructions", None)
 
@@ -228,7 +228,7 @@ class Caller(Chain):
             response = self.requests_wrapper.delete(data["url"], params=params, json=request_body)
         else:
             raise NotImplementedError
-        
+
         if isinstance(response, requests.models.Response):
             if response.status_code != 200:
                 return response.text
@@ -237,9 +237,9 @@ class Caller(Chain):
             response_text = response
         else:
             raise NotImplementedError
-        
+
         return response_text, params, request_body, desc, query
-    
+
     def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
         iterations = 0
         time_elapsed = 0.0
@@ -276,7 +276,7 @@ class Caller(Chain):
             },
             input_variables=["api_plan", "background", "agent_scratchpad"],
         )
-        
+
         caller_chain = LLMChain(llm=self.llm, prompt=caller_prompt)
 
         while self._should_continue(iterations, time_elapsed):
