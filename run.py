@@ -6,10 +6,10 @@ import time
 import yaml
 
 import spotipy
-from langchain_community.utilities import Requests
+from langchain_community.utilities import Requests, RequestsWrapper
 
 # from langchain import OpenAI
-from langchain_community.llms import OpenAI
+from langchain_openai import OpenAI
 
 from utils import reduce_openapi_spec, ColorPrint
 from model import RestGPT
@@ -62,9 +62,9 @@ def main():
     else:
         raise ValueError(f"Unsupported scenario: {scenario}")
 
-    requests_wrapper = Requests(headers=headers)
+    requests_wrapper = RequestsWrapper(headers=headers)
 
-    llm = OpenAI(model_name="text-davinci-003", temperature=0.0, max_tokens=700)
+    llm = OpenAI(model="text-davinci-003", temperature=0.0, max_tokens=700)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,

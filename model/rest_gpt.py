@@ -9,7 +9,7 @@ from langchain.chains.base import Chain
 from langchain_core.callbacks import CallbackManagerForChainRun
 from langchain_core.language_models import BaseLLM
 
-from langchain_community.utilities import TextRequestsWrapper
+from langchain_community.utilities import RequestsWrapper
 
 from .planner import Planner
 from .api_selector import APISelector
@@ -28,7 +28,7 @@ class RestGPT(Chain):
     planner: Planner
     api_selector: APISelector
     scenario: str = "tmdb"
-    requests_wrapper: TextRequestsWrapper
+    requests_wrapper: RequestsWrapper
     simple_parser: bool = False
     return_intermediate_steps: bool = False
     max_iterations: Optional[int] = 15
@@ -40,7 +40,7 @@ class RestGPT(Chain):
         llm: BaseLLM,
         api_spec: ReducedOpenAPISpec,
         scenario: str,
-        requests_wrapper: TextRequestsWrapper,
+        requests_wrapper: RequestsWrapper,
         caller_doc_with_response: bool = False,
         parser_with_example: bool = False,
         simple_parser: bool = False,
@@ -67,7 +67,7 @@ class RestGPT(Chain):
             scenario=scenario,
             requests_wrapper=requests_wrapper,
             simple_parser=simple_parser,
-            callback_manager=callback_manager,
+            callbacks=callback_manager,
             **kwargs,
         )
 
