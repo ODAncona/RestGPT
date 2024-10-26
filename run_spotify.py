@@ -5,7 +5,7 @@ import time
 import yaml
 
 import spotipy
-from langchain_community.utilities import Requests
+from langchain_community.utilities import Requests, RequestsWrapper
 from langchain import OpenAI
 
 from utils import reduce_openapi_spec, ColorPrint
@@ -55,7 +55,7 @@ def main():
     access_token = spotipy.util.prompt_for_user_token(scope=",".join(scopes))
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    requests_wrapper = Requests(headers=headers)
+    requests_wrapper = RequestsWrapper(headers=headers)
 
     llm = OpenAI(model_name="gpt-4o", temperature=0.0)
     rest_gpt = RestGPT(

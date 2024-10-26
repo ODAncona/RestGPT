@@ -4,7 +4,7 @@ import logging
 import time
 import yaml
 
-from langchain_community.utilities import Requests
+from langchain_community.utilities import Requests, RequestsWrapper
 from langchain import OpenAI
 
 from utils import reduce_openapi_spec, ColorPrint, MyRotatingFileHandler
@@ -57,7 +57,7 @@ def main():
     access_token = os.environ["TMDB_ACCESS_TOKEN"]
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    requests_wrapper = Requests(headers=headers)
+    requests_wrapper = RequestsWrapper(headers=headers)
 
     queries = json.load(open("datasets/tmdb.json", "r"))
     queries = [item["query"] for item in queries]
