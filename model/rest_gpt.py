@@ -19,6 +19,7 @@ from utils import ReducedOpenAPISpec
 
 logger = logging.getLogger(__name__)
 
+
 class RestGPT(Chain):
     """Consists of an agent using tools."""
 
@@ -27,7 +28,7 @@ class RestGPT(Chain):
     planner: Planner
     api_selector: APISelector
     scenario: str = "tmdb"
-    requests_wrapper: RequestsWrapper
+    requests_wrapper: TextRequestsWrapper
     simple_parser: bool = False
     return_intermediate_steps: bool = False
     max_iterations: Optional[int] = 15
@@ -39,26 +40,35 @@ class RestGPT(Chain):
         llm: BaseLLM,
         api_spec: ReducedOpenAPISpec,
         scenario: str,
-        requests_wrapper: RequestsWrapper,
+        requests_wrapper: TextRequestsWrapper,
         caller_doc_with_response: bool = False,
         parser_with_example: bool = False,
         simple_parser: bool = False,
         callback_manager: Optional[BaseCallbackManager] = None,
         **kwargs: Any,
     ) -> None:
-        if scenario in ['TMDB', 'Tmdb']:
-            scenario = 'tmdb'
-        if scenario in ['Spotify']:
-            scenario = 'spotify' 
-        if scenario not in ['tmdb', 'spotify']:
+        if scenario in ["TMDB", "Tmdb"]:
+            scenario = "tmdb"
+        if scenario in ["Spotify"]:
+            scenario = "spotify"
+        if scenario not in ["tmdb", "spotify"]:
             raise ValueError(f"Invalid scenario {scenario}")
 
         planner = Planner(llm=llm, scenario=scenario)
-        api_selector = APISelector(llm=llm, scenario=scenario, api_spec=api_spec)
+        api_selector = APISelector(
+            llm=llm, scenario=scenario, api_spec=api_spec
+        )
 
         super().__init__(
-            llm=llm, api_spec=api_spec, planner=planner, api_selector=api_selector, scenario=scenario,
-            requests_wrapper=requests_wrapper, simple_parser=simple_parser, callback_manager=callback_manager, **kwargs
+            llm=llm,
+            api_spec=api_spec,
+            planner=planner,
+            api_selector=api_selector,
+            scenario=scenario,
+            requests_wrapper=requests_wrapper,
+            simple_parser=simple_parser,
+            callback_manager=callback_manager,
+            **kwargs,
         )
 
     def save(self, file_path: Union[Path, str]) -> None:
@@ -94,7 +104,10 @@ class RestGPT(Chain):
         return input()
 
     def _should_continue(self, iterations: int, time_elapsed: float) -> bool:
-        if self.max_iterations is not None and iterations >= self.max_iterations:
+        if (
+            self.max_iterations is not None
+            and iterations >= self.max_iterations
+        ):
             return False
         if (
             self.max_execution_time is not None
@@ -113,7 +126,9 @@ class RestGPT(Chain):
             final_output["intermediate_steps"] = intermediate_steps
         return final_output
 
-    def _get_api_selector_background(self, planner_history: List[Tuple[str, str]]) -> str:
+    def _get_api_selector_background(
+        self, planner_history: List[Tuple[str, str]]
+    ) -> str:
         if len(planner_history) == 0:
             return "No background"
         return "\n".join([step[1] for step in planner_history])
@@ -133,7 +148,7 @@ class RestGPT(Chain):
         inputs: Dict[str, Any],
         run_manager: Optional[CallbackManagerForChainRun] = None,
     ) -> Dict[str, Any]:
-        query = inputs['query']
+        query = inputs["query"]
 
         planner_history: List[Tuple[str, str]] = []
         iterations = 0
@@ -146,13 +161,25 @@ class RestGPT(Chain):
         while self._should_continue(iterations, time_elapsed):
             tmp_planner_history = [plan]
             api_selector_history: List[Tuple[str, str, str]] = []
-            api_selector_background = self._get_api_selector_background(planner_history)
-            api_plan = self.api_selector.run(plan=plan, background=api_selector_background)
+            api_selector_background = self._get_api_selector_background(
+                planner_history
+            )
+            api_plan = self.api_selector.run(
+                plan=plan, background=api_selector_background
+            )
 
             finished = re.match(r"No API call needed.(.*)", api_plan)
             if not finished:
-                executor = Caller(llm=self.llm, api_spec=self.api_spec, scenario=self.scenario, simple_parser=self.simple_parser, requests_wrapper=self.requests_wrapper)
-                execution_res = executor.run(api_plan=api_plan, background=api_selector_background)
+                executor = Caller(
+                    llm=self.llm,
+                    api_spec=self.api_spec,
+                    scenario=self.scenario,
+                    simple_parser=self.simple_parser,
+                    requests_wrapper=self.requests_wrapper,
+                )
+                execution_res = executor.run(
+                    api_plan=api_plan, background=api_selector_background
+                )
             else:
                 execution_res = finished.group(1)
 
@@ -163,13 +190,28 @@ class RestGPT(Chain):
             logger.info(f"Planner: {plan}")
 
             while self._should_continue_plan(plan):
-                api_selector_background = self._get_api_selector_background(planner_history)
-                api_plan = self.api_selector.run(plan=tmp_planner_history[0], background=api_selector_background, history=api_selector_history, instruction=plan)
+                api_selector_background = self._get_api_selector_background(
+                    planner_history
+                )
+                api_plan = self.api_selector.run(
+                    plan=tmp_planner_history[0],
+                    background=api_selector_background,
+                    history=api_selector_history,
+                    instruction=plan,
+                )
 
                 finished = re.match(r"No API call needed.(.*)", api_plan)
                 if not finished:
-                    executor = Caller(llm=self.llm, api_spec=self.api_spec, scenario=self.scenario, simple_parser=self.simple_parser, requests_wrapper=self.requests_wrapper)
-                    execution_res = executor.run(api_plan=api_plan, background=api_selector_background)
+                    executor = Caller(
+                        llm=self.llm,
+                        api_spec=self.api_spec,
+                        scenario=self.scenario,
+                        simple_parser=self.simple_parser,
+                        requests_wrapper=self.requests_wrapper,
+                    )
+                    execution_res = executor.run(
+                        api_plan=api_plan, background=api_selector_background
+                    )
                 else:
                     execution_res = finished.group(1)
 
