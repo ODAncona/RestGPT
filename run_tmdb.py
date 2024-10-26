@@ -5,7 +5,7 @@ import time
 import yaml
 
 from langchain_community.utilities import Requests, RequestsWrapper
-from langchain import OpenAI
+from langchain_openai import ChatOpenAI
 
 from utils import reduce_openapi_spec, ColorPrint, MyRotatingFileHandler
 from model import RestGPT
@@ -14,8 +14,7 @@ logger = logging.getLogger()
 
 
 def run(query, api_spec, requests_wrapper, simple_parser=False):
-    llm = OpenAI(model_name="gpt-4o", temperature=0.0, max_tokens=256)
-    # llm = OpenAI(model_name="gpt-3.5-turbo-0301", temperature=0.0, max_tokens=256)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.0, max_tokens=256)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,

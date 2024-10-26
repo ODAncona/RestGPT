@@ -9,7 +9,7 @@ import spotipy
 from langchain_community.utilities import Requests, RequestsWrapper
 
 # from langchain import OpenAI
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 
 from utils import reduce_openapi_spec, ColorPrint
 from model import RestGPT
@@ -64,7 +64,7 @@ def main():
 
     requests_wrapper = RequestsWrapper(headers=headers)
 
-    llm = OpenAI(model="gpt-4o", temperature=0.0, max_tokens=700)
+    llm = ChatOpenAI(model="gpt-4o", temperature=0.0, max_tokens=700)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,
