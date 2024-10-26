@@ -302,7 +302,7 @@ class Caller(Chain):
         if not self.with_response and "responses" in tmp_docs:
             tmp_docs.pop("responses")
         tmp_docs = yaml.dump(tmp_docs)
-        encoder = tiktoken.encoding_for_model("text-davinci-003")
+        encoder = tiktoken.encoding_for_model("gpt-4o")
         encoded_docs = encoder.encode(tmp_docs)
         if len(encoded_docs) > 1500:
             tmp_docs = encoder.decode(encoded_docs[:1500])

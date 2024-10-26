@@ -64,7 +64,7 @@ def main():
 
     requests_wrapper = RequestsWrapper(headers=headers)
 
-    llm = OpenAI(model="text-davinci-003", temperature=0.0, max_tokens=700)
+    llm = OpenAI(model="gpt-4o", temperature=0.0, max_tokens=700)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,
