@@ -10,7 +10,10 @@ import requests
 import tiktoken
 
 from langchain.chains.base import Chain
-from langchain.chains.llm import LLMChain
+
+# from langchain.chains.llm import LLMChain
+from langchain_core.runnables import RunnableSequence
+
 from langchain_community.utilities import TextRequestsWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models import BaseLLM
@@ -132,14 +135,21 @@ class Caller(Chain):
         simple_parser: bool = False,
         with_response: bool = False,
     ) -> None:
-        super().__init__(
-            llm=llm,
-            api_spec=api_spec,
-            scenario=scenario,
-            requests_wrapper=requests_wrapper,
-            simple_parser=simple_parser,
-            with_response=with_response,
-        )
+        # super().__init__(
+        #     llm=llm,
+        #     api_spec=api_spec,
+        #     scenario=scenario,
+        #     requests_wrapper=requests_wrapper,
+        #     simple_parser=simple_parser,
+        #     with_response=with_response,
+        # )
+        super().__init__()
+        self.llm = llm
+        self.api_spec = api_spec
+        self.scenario = scenario
+        self.requests_wrapper = requests_wrapper
+        self.simple_parser = simple_parser
+        self.with_response = with_response
 
     @property
     def _chain_type(self) -> str:
@@ -317,15 +327,24 @@ class Caller(Chain):
             input_variables=["api_plan", "background", "agent_scratchpad"],
         )
 
-        caller_chain = LLMChain(llm=self.llm, prompt=caller_prompt)
+        # caller_chain = LLMChain(llm=self.llm, prompt=caller_prompt)
+        caller_chain = RunnableSequence(self.llm, caller_prompt)
 
         while self._should_continue(iterations, time_elapsed):
             scratchpad = self._construct_scratchpad(intermediate_steps)
-            caller_chain_output = caller_chain.run(
-                api_plan=api_plan,
-                background=inputs["background"],
-                agent_scratchpad=scratchpad,
-                stop=self._stop,
+            # caller_chain_output = caller_chain.run(
+            #     api_plan=api_plan,
+            #     background=inputs["background"],
+            #     agent_scratchpad=scratchpad,
+            #     stop=self._stop,
+            # )
+            caller_chain_output = caller_chain.invoke(
+                {
+                    "api_plan": api_plan,
+                    "background": inputs["background"],
+                    "agent_scratchpad": scratchpad,
+                    "stop": self._stop,
+                }
             )
             logger.info(f"Caller: {caller_chain_output}")
 
