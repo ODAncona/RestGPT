@@ -3,7 +3,9 @@ import re
 import logging
 
 from langchain.chains.base import Chain
-from langchain.chains.llm import LLMChain
+
+# from langchain.chains.llm import LLMChain
+from langchain_core.runnables import RunnableSequence
 from langchain_core.prompts import BasePromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models import BaseLLM
@@ -65,7 +67,7 @@ Background: The ids and names of the tracks of the album 1JnjcAIKQ9TSJFVFierTB8 
 User query: append the first song of the newest album 1JnjcAIKQ9TSJFVFierTB8 of Coldplay (id 4gzpq5DPGxSnKTe4SA8HAU) to my player queue.
 API calling 1: POST /me/player/queue to add Yellow (3AJwUDP919kvQ9QcozQPxg) to the player queue
 API response: Yellow is added to the player queue
-"""
+""",
 }
 
 # Thought: I am finished executing the plan and have the information the user asked for or the data the used asked to create
@@ -106,7 +108,6 @@ User query: {plan}
 API calling 1: {agent_scratchpad}"""
 
 
-
 class APISelector(Chain):
     llm: BaseLLM
     api_spec: ReducedOpenAPISpec
@@ -114,15 +115,33 @@ class APISelector(Chain):
     api_selector_prompt: BasePromptTemplate
     output_key: str = "result"
 
-    def __init__(self, llm: BaseLLM, scenario: str, api_spec: ReducedOpenAPISpec) -> None:
-        api_name_desc = [f"{endpoint[0]} {endpoint[1].split('.')[0] if endpoint[1] is not None else ''}" for endpoint in api_spec.endpoints]
-        api_name_desc = '\n'.join(api_name_desc)
+    def __init__(
+        self, llm: BaseLLM, scenario: str, api_spec: ReducedOpenAPISpec
+    ) -> None:
+        api_name_desc = [
+            f"{endpoint[0]} {endpoint[1].split('.')[0] if endpoint[1] is not None else ''}"
+            for endpoint in api_spec.endpoints
+        ]
+        api_name_desc = "\n".join(api_name_desc)
         api_selector_prompt = PromptTemplate(
             template=API_SELECTOR_PROMPT,
-            partial_variables={"endpoints": api_name_desc, "icl_examples": icl_examples[scenario]},
+            partial_variables={
+                "endpoints": api_name_desc,
+                "icl_examples": icl_examples[scenario],
+            },
             input_variables=["plan", "background", "agent_scratchpad"],
         )
-        super().__init__(llm=llm, api_spec=api_spec, scenario=scenario, api_selector_prompt=api_selector_prompt)
+        # super().__init__(
+        #     llm=llm,
+        #     api_spec=api_spec,
+        #     scenario=scenario,
+        #     api_selector_prompt=api_selector_prompt,
+        # )
+        super().__init__()
+        self.llm = llm
+        self.api_spec = api_spec
+        self.scenario = scenario
+        self.api_selector_prompt = api_selector_prompt
 
     @property
     def _chain_type(self) -> str:
@@ -169,14 +188,36 @@ class APISelector(Chain):
 
     def _call(self, inputs: Dict[str, Any]) -> Dict[str, str]:
         # inputs: background, plan, (optional) history, instruction
-        if 'history' in inputs:
-            scratchpad = self._construct_scratchpad(inputs['history'], inputs['instruction'])
+        if "history" in inputs:
+            scratchpad = self._construct_scratchpad(
+                inputs["history"], inputs["instruction"]
+            )
         else:
             scratchpad = ""
-        api_selector_chain = LLMChain(llm=self.llm, prompt=self.api_selector_prompt)
-        api_selector_chain_output = api_selector_chain.run(plan=inputs['plan'], background=inputs['background'], agent_scratchpad=scratchpad, stop=self._stop)
+        # api_selector_chain = LLMChain(
+        #     llm=self.llm, prompt=self.api_selector_prompt
+        # )
+        api_selector_chain = RunnableSequence(
+            self.llm, self.api_selector_prompt
+        )
+        # api_selector_chain_output = api_selector_chain.run(
+        #     plan=inputs["plan"],
+        #     background=inputs["background"],
+        #     agent_scratchpad=scratchpad,
+        #     stop=self._stop,
+        # )
+        api_selector_chain_output = api_selector_chain.invoke(
+            {
+                "plan": inputs["plan"],
+                "background": inputs["background"],
+                "agent_scratchpad": scratchpad,
+                "stop": self._stop,
+            }
+        )
 
-        api_plan = re.sub(r"API calling \d+: ", "", api_selector_chain_output).strip()
+        api_plan = re.sub(
+            r"API calling \d+: ", "", api_selector_chain_output
+        ).strip()
 
         logger.info(f"API Selector: {api_plan}")
 
@@ -184,12 +225,23 @@ class APISelector(Chain):
         if finish is not None:
             return {"result": api_plan}
 
-
         while get_matched_endpoint(self.api_spec, api_plan) is None:
-            logger.info("API Selector: The API you called is not in the list of available APIs. Please use another API.")
-            scratchpad += api_selector_chain_output + "\nThe API you called is not in the list of available APIs. Please use another API.\n"
-            api_selector_chain_output = api_selector_chain.run(plan=inputs['plan'], background=inputs['background'], agent_scratchpad=scratchpad, stop=self._stop)
-            api_plan = re.sub(r"API calling \d+: ", "", api_selector_chain_output).strip()
+            logger.info(
+                "API Selector: The API you called is not in the list of available APIs. Please use another API."
+            )
+            scratchpad += (
+                api_selector_chain_output
+                + "\nThe API you called is not in the list of available APIs. Please use another API.\n"
+            )
+            api_selector_chain_output = api_selector_chain.run(
+                plan=inputs["plan"],
+                background=inputs["background"],
+                agent_scratchpad=scratchpad,
+                stop=self._stop,
+            )
+            api_plan = re.sub(
+                r"API calling \d+: ", "", api_selector_chain_output
+            ).strip()
             logger.info(f"API Selector: {api_plan}")
 
         return {"result": api_plan}
