@@ -70,15 +70,18 @@ class RestGPT(Chain):
         #     callbacks=callback_manager,
         #     **kwargs,
         # )
-        super().__init__(**kwargs)
-        self.llm = llm
-        self.api_spec = api_spec
-        self.planner = planner
-        self.api_selector = api_selector
-        self.scenario = scenario
-        self.requests_wrapper = requests_wrapper
-        self.simple_parser = simple_parser
-        self.callback_manager = callback_manager
+        init_args = {
+            "llm": llm,
+            "api_spec": api_spec,
+            "planner": planner,
+            "api_selector": api_selector,
+            "scenario": scenario,
+            "requests_wrapper": requests_wrapper,
+            "simple_parser": simple_parser,
+            "callback_manager": callback_manager,
+            **kwargs,
+        }
+        super().__init__(**init_args)
 
     def save(self, file_path: Union[Path, str]) -> None:
         """Raise error - saving not supported for Agent Executors."""

@@ -115,7 +115,11 @@ class APISelector(Chain):
     output_key: str = "result"
 
     def __init__(
-        self, llm: BaseChatModel, scenario: str, api_spec: ReducedOpenAPISpec
+        self,
+        llm: BaseChatModel,
+        scenario: str,
+        api_spec: ReducedOpenAPISpec,
+        **kwargs: Any,
     ) -> None:
         api_name_desc = [
             f"{endpoint[0]} {endpoint[1].split('.')[0] if endpoint[1] is not None else ''}"
@@ -136,11 +140,14 @@ class APISelector(Chain):
         #     scenario=scenario,
         #     api_selector_prompt=api_selector_prompt,
         # )
-        super().__init__()
-        self.llm = llm
-        self.api_spec = api_spec
-        self.scenario = scenario
-        self.api_selector_prompt = api_selector_prompt
+        init_args = {
+            "llm": llm,
+            "api_spec": api_spec,
+            "scenario": scenario,
+            "api_selector_prompt": api_selector_prompt,
+            **kwargs,
+        }
+        super().__init__(**init_args)
 
     @property
     def _chain_type(self) -> str:

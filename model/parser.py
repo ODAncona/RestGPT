@@ -198,6 +198,7 @@ class ResponseParser(Chain):
         api_path: str,
         api_doc: Dict,
         with_example: bool = False,
+        **kwargs: Any,
     ) -> None:
         if "responses" not in api_doc or "content" not in api_doc["responses"]:
             llm_parsing_prompt = PromptTemplate(
@@ -214,9 +215,12 @@ class ResponseParser(Chain):
                 ],
             )
             # super().__init__(llm=llm, llm_parsing_prompt=llm_parsing_prompt)
-            super().__init__()
-            self.llm = llm
-            self.llm_parsing_prompt = llm_parsing_prompt
+            init_args = {
+                "llm": llm,
+                "llm_parsing_prompt": llm_parsing_prompt,
+                **kwargs,
+            }
+            super().__init__(**init_args)
             return
 
         if "application/json" in api_doc["responses"]["content"]:
@@ -301,13 +305,16 @@ class ResponseParser(Chain):
         #     postprocess_prompt=postprocess_prompt,
         #     encoder=encoder,
         # )
-        super().__init__()
-        self.llm = llm
-        self.code_parsing_schema_prompt = code_parsing_schema_prompt
-        self.code_parsing_response_prompt = code_parsing_response_prompt
-        self.llm_parsing_prompt = llm_parsing_prompt
-        self.postprocess_prompt = postprocess_prompt
-        self.encoder = encoder
+        init_args = {
+            "llm": llm,
+            "code_parsing_schema_prompt": code_parsing_schema_prompt,
+            "code_parsing_response_prompt": code_parsing_response_prompt,
+            "llm_parsing_prompt": llm_parsing_prompt,
+            "postprocess_prompt": postprocess_prompt,
+            "encoder": encoder,
+            **kwargs,
+        }
+        super().__init__(**init_args)
 
     @property
     def _chain_type(self) -> str:
@@ -487,10 +494,12 @@ class SimpleResponseParser(Chain):
             # super().__init__(
             #     llm=llm, llm_parsing_prompt=llm_parsing_prompt, encoder=encoder
             # )
-            super().__init__()
-            self.llm = llm
-            self.llm_parsing_prompt = llm_parsing_prompt
-            self.encoder = encoder
+            init_args = {
+                "llm": llm,
+                "llm_parsing_prompt": llm_parsing_prompt,
+                "encoder": encoder,
+            }
+            super().__init__(**init_args)
             return
 
         llm_parsing_prompt = PromptTemplate(
@@ -512,10 +521,12 @@ class SimpleResponseParser(Chain):
         # super().__init__(
         #     llm=llm, llm_parsing_prompt=llm_parsing_prompt, encoder=encoder
         # )
-        super().__init__()
-        self.llm = llm
-        self.llm_parsing_prompt = llm_parsing_prompt
-        self.encoder = encoder
+        init_args = {
+            "llm": llm,
+            "llm_parsing_prompt": llm_parsing_prompt,
+            "encoder": encoder,
+        }
+        super().__init__(**init_args)
 
     @property
     def _chain_type(self) -> str:

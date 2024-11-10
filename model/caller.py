@@ -133,6 +133,7 @@ class Caller(Chain):
         requests_wrapper: TextRequestsWrapper,
         simple_parser: bool = False,
         with_response: bool = False,
+        **kwargs: Any,
     ) -> None:
         # super().__init__(
         #     llm=llm,
@@ -142,13 +143,16 @@ class Caller(Chain):
         #     simple_parser=simple_parser,
         #     with_response=with_response,
         # )
-        super().__init__()
-        self.llm = llm
-        self.api_spec = api_spec
-        self.scenario = scenario
-        self.requests_wrapper = requests_wrapper
-        self.simple_parser = simple_parser
-        self.with_response = with_response
+        init_args = {
+            "llm": llm,
+            "api_spec": api_spec,
+            "scenario": scenario,
+            "requests_wrapper": requests_wrapper,
+            "simple_parser": simple_parser,
+            "with_response": with_response,
+            **kwargs,
+        }
+        super().__init__(**init_args)
 
     @property
     def _chain_type(self) -> str:
