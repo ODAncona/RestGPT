@@ -3,7 +3,6 @@ import re
 
 from langchain.chains.base import Chain
 
-# from langchain.chains.llm import LLMChain
 from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models import BaseChatModel, BaseChatModel
@@ -100,10 +99,6 @@ class Planner(Chain):
         planner_prompt=PLANNER_PROMPT,
         **kwargs: Any,
     ) -> None:
-        # super().__init__()
-        # self.llm = llm
-        # self.scenario = scenario
-        # self.planner_prompt = planner_prompt
         init_args = {
             "llm": llm,
             "scenario": scenario,
@@ -161,9 +156,7 @@ class Planner(Chain):
             },
             input_variables=["input"],
         )
-        # planner_chain = LLMChain(llm=self.llm, prompt=planner_prompt)
         planner_chain = planner_prompt | self.llm
-        # planner_chain_output = planner_chain.run(input=inputs['input'], stop=self._stop)
 
         planner_chain_output = planner_chain.invoke(
             {

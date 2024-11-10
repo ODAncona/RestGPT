@@ -26,7 +26,7 @@ def run(query, api_spec, requests_wrapper, simple_parser=False):
     logger.info(f"Query: {query}")
 
     start_time = time.time()
-    rest_gpt.run(query)
+    rest_gpt.invoke({"query": query})
     logger.info(f"Execution Time: {int(time.time() - start_time)} seconds")
 
 
