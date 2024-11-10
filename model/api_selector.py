@@ -5,10 +5,9 @@ import logging
 from langchain.chains.base import Chain
 
 # from langchain.chains.llm import LLMChain
-from langchain_core.runnables import RunnableSequence
 from langchain_core.prompts import BasePromptTemplate
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models import BaseLLM
+from langchain_core.language_models import BaseChatModel
 
 from utils import ReducedOpenAPISpec, get_matched_endpoint
 
@@ -109,14 +108,14 @@ API calling 1: {agent_scratchpad}"""
 
 
 class APISelector(Chain):
-    llm: BaseLLM
+    llm: BaseChatModel
     api_spec: ReducedOpenAPISpec
     scenario: str
     api_selector_prompt: BasePromptTemplate
     output_key: str = "result"
 
     def __init__(
-        self, llm: BaseLLM, scenario: str, api_spec: ReducedOpenAPISpec
+        self, llm: BaseChatModel, scenario: str, api_spec: ReducedOpenAPISpec
     ) -> None:
         api_name_desc = [
             f"{endpoint[0]} {endpoint[1].split('.')[0] if endpoint[1] is not None else ''}"
@@ -197,9 +196,8 @@ class APISelector(Chain):
         # api_selector_chain = LLMChain(
         #     llm=self.llm, prompt=self.api_selector_prompt
         # )
-        api_selector_chain = RunnableSequence(
-            self.llm, self.api_selector_prompt
-        )
+        api_selector_chain = self.api_selector_prompt | self.llm
+
         # api_selector_chain_output = api_selector_chain.run(
         #     plan=inputs["plan"],
         #     background=inputs["background"],

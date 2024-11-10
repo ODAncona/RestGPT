@@ -1,0 +1,5 @@
+colorama
+spotipy
+langchain-community
+langchain-openai
+langchain-core

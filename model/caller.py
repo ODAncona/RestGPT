@@ -12,11 +12,10 @@ import tiktoken
 from langchain.chains.base import Chain
 
 # from langchain.chains.llm import LLMChain
-from langchain_core.runnables import RunnableSequence
 
 from langchain_community.utilities import TextRequestsWrapper
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models import BaseLLM
+from langchain_core.language_models import BaseChatModel
 
 from utils import (
     simplify_json,
@@ -115,7 +114,7 @@ Thought: {agent_scratchpad}
 
 
 class Caller(Chain):
-    llm: BaseLLM
+    llm: BaseChatModel
     api_spec: ReducedOpenAPISpec
     scenario: str
     requests_wrapper: TextRequestsWrapper
@@ -128,7 +127,7 @@ class Caller(Chain):
 
     def __init__(
         self,
-        llm: BaseLLM,
+        llm: BaseChatModel,
         api_spec: ReducedOpenAPISpec,
         scenario: str,
         requests_wrapper: TextRequestsWrapper,
@@ -328,7 +327,7 @@ class Caller(Chain):
         )
 
         # caller_chain = LLMChain(llm=self.llm, prompt=caller_prompt)
-        caller_chain = RunnableSequence(self.llm, caller_prompt)
+        caller_chain = caller_prompt | self.llm
 
         while self._should_continue(iterations, time_elapsed):
             scratchpad = self._construct_scratchpad(intermediate_steps)

@@ -1,12 +1,12 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 import re
 
 from langchain.chains.base import Chain
 
 # from langchain.chains.llm import LLMChain
-from langchain_core.runnables import RunnableSequence, RunnableConfig
+from langchain_core.runnables import RunnableConfig
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models import BaseLLM
+from langchain_core.language_models import BaseChatModel, BaseChatModel
 
 icl_examples = {
     "tmdb": """Example 1:
@@ -86,21 +86,31 @@ Plan step 1: {agent_scratchpad}"""
 
 
 class Planner(Chain):
-    llm: BaseLLM
+    """Chain that plans steps for solving API-related queries."""
+
+    llm: BaseChatModel
     scenario: str
     planner_prompt: str
     output_key: str = "result"
 
     def __init__(
-        self, llm: BaseLLM, scenario: str, planner_prompt=PLANNER_PROMPT
+        self,
+        llm: BaseChatModel,
+        scenario: str,
+        planner_prompt=PLANNER_PROMPT,
+        **kwargs: Any,
     ) -> None:
-        super().__init__()
-        self.llm = llm
-        self.scenario = scenario
-        self.planner_prompt = planner_prompt
-        # super().__init__(
-        #     llm=llm, scenario=scenario, planner_prompt=planner_prompt
-        # )
+        # super().__init__()
+        # self.llm = llm
+        # self.scenario = scenario
+        # self.planner_prompt = planner_prompt
+        init_args = {
+            "llm": llm,
+            "scenario": scenario,
+            "planner_prompt": planner_prompt,
+            **kwargs,
+        }
+        super().__init__(**init_args)
 
     @property
     def _chain_type(self) -> str:
@@ -152,7 +162,7 @@ class Planner(Chain):
             input_variables=["input"],
         )
         # planner_chain = LLMChain(llm=self.llm, prompt=planner_prompt)
-        planner_chain = RunnableSequence(planner_prompt, self.llm)
+        planner_chain = planner_prompt | self.llm
         # planner_chain_output = planner_chain.run(input=inputs['input'], stop=self._stop)
 
         planner_chain_output = planner_chain.invoke(

@@ -11,9 +11,8 @@ import tiktoken
 from langchain.chains.base import Chain
 
 # from langchain.chains.llm import LLMChain
-from langchain_core.runnables import RunnableSequence
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models import BaseLLM
+from langchain_core.language_models import BaseChatModel
 
 from utils import simplify_json
 
@@ -179,7 +178,7 @@ class PythonREPL(BaseModel):
 class ResponseParser(Chain):
     """Implements Program-Aided Language Models."""
 
-    llm: BaseLLM
+    llm: BaseChatModel
     code_parsing_schema_prompt: PromptTemplate = None
     code_parsing_response_prompt: PromptTemplate = None
     llm_parsing_prompt: PromptTemplate = None
@@ -195,7 +194,7 @@ class ResponseParser(Chain):
 
     def __init__(
         self,
-        llm: BaseLLM,
+        llm: BaseChatModel,
         api_path: str,
         api_doc: Dict,
         with_example: bool = False,
@@ -344,9 +343,7 @@ class ResponseParser(Chain):
             #     api_param=inputs["api_param"],
             #     response_description=inputs["response_description"],
             # )
-            extract_code_chain = RunnableSequence(
-                self.llm, self.llm_parsing_prompt
-            )
+            extract_code_chain = self.llm_parsing_prompt | self.llm
             output = extract_code_chain.invoke(
                 {
                     "query": inputs["query"],
@@ -365,9 +362,7 @@ class ResponseParser(Chain):
         #     response_description=inputs["response_description"],
         #     api_param=inputs["api_param"],
         # )
-        extract_code_chain = RunnableSequence(
-            self.llm, self.code_parsing_schema_prompt
-        )
+        extract_code_chain = self.code_parsing_schema_prompt | self.llm
         code = extract_code_chain.invoke(
             {
                 "query": inputs["query"],
@@ -386,9 +381,7 @@ class ResponseParser(Chain):
             # extract_code_chain = LLMChain(
             #     llm=self.llm, prompt=self.code_parsing_response_prompt
             # )
-            extract_code_chain = RunnableSequence(
-                self.llm, self.code_parsing_response_prompt
-            )
+            extract_code_chain = self.code_parsing_response_prompt | self.llm
             json_data = json.loads(inputs["json"])
             encoded_json = self.encoder.encode(inputs["json"])
             if len(encoded_json) > self.max_json_length_1:
@@ -420,9 +413,7 @@ class ResponseParser(Chain):
             # extract_code_chain = LLMChain(
             #     llm=self.llm, prompt=self.llm_parsing_prompt
             # )
-            extract_code_chain = RunnableSequence(
-                self.llm, self.llm_parsing_prompt
-            )
+            extract_code_chain = self.llm_parsing_prompt | self.llm
             if len(encoded_json) > self.max_json_length_2:
                 simplified_json_data = (
                     self.encoder.decode(encoded_json[: self.max_json_length_2])
@@ -455,9 +446,7 @@ class ResponseParser(Chain):
             #     llm=self.llm, prompt=self.postprocess_prompt
             # )
             # output = postprocess_chain.predict(truncated_str=output)
-            postprocess_chain = RunnableSequence(
-                self.llm, self.postprocess_prompt
-            )
+            postprocess_chain = self.postprocess_prompt | self.llm
             output = postprocess_chain.invoke({"truncated_str": output})
 
         return {"result": output}
@@ -466,7 +455,7 @@ class ResponseParser(Chain):
 class SimpleResponseParser(Chain):
     """Implements Program-Aided Language Models."""
 
-    llm: BaseLLM
+    llm: BaseChatModel
     llm_parsing_prompt: PromptTemplate = None
     encoder: tiktoken.Encoding = None
     max_json_length: int = 1000
@@ -475,7 +464,7 @@ class SimpleResponseParser(Chain):
 
     def __init__(
         self,
-        llm: BaseLLM,
+        llm: BaseChatModel,
         api_path: str,
         api_doc: Dict,
         with_example: bool = False,
@@ -562,9 +551,7 @@ class SimpleResponseParser(Chain):
             #     api_param=inputs["api_param"],
             #     response_description=inputs["response_description"],
             # )
-            extract_code_chain = RunnableSequence(
-                self.llm, self.llm_parsing_prompt
-            )
+            extract_code_chain = self.llm_parsing_prompt | self.llm
             output = extract_code_chain.invoke(
                 {
                     "query": inputs["query"],
@@ -579,7 +566,7 @@ class SimpleResponseParser(Chain):
         # extract_code_chain = LLMChain(
         #     llm=self.llm, prompt=self.llm_parsing_prompt
         # )
-        extract_code_chain = RunnableSequence(self.llm, self.llm_parsing_prompt)
+        extract_code_chain = self.llm_parsing_prompt | self.llm
         if len(encoded_json) > self.max_json_length:
             encoded_json = (
                 self.encoder.decode(encoded_json[: self.max_json_length])

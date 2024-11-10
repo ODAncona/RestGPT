@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from langchain_core.callbacks import BaseCallbackManager
 from langchain.chains.base import Chain
 from langchain_core.callbacks import CallbackManagerForChainRun
-from langchain_core.language_models import BaseLLM
+from langchain_core.language_models import BaseChatModel
 
 from langchain_community.utilities import RequestsWrapper
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class RestGPT(Chain):
     """Consists of an agent using tools."""
 
-    llm: BaseLLM
+    llm: BaseChatModel
     api_spec: ReducedOpenAPISpec
     planner: Planner
     api_selector: APISelector
@@ -37,7 +37,7 @@ class RestGPT(Chain):
 
     def __init__(
         self,
-        llm: BaseLLM,
+        llm: BaseChatModel,
         api_spec: ReducedOpenAPISpec,
         scenario: str,
         requests_wrapper: RequestsWrapper,
