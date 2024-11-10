@@ -9,8 +9,6 @@ from pydantic import BaseModel, Field
 import tiktoken
 
 from langchain.chains.base import Chain
-
-# from langchain.chains.llm import LLMChain
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models import BaseChatModel
 
@@ -376,7 +374,7 @@ class ResponseParser(Chain):
                 "response_description": inputs["response_description"],
                 "api_param": inputs["api_param"],
             }
-        )
+        ).content
 
         logger.info(f"Code: \n{code}")
         json_data = json.loads(inputs["json"])
@@ -410,7 +408,7 @@ class ResponseParser(Chain):
                     "json": simplified_json_data,
                     "api_param": inputs["api_param"],
                 }
-            )
+            ).content
             logger.info(f"Code: \n{code}")
             repl = PythonREPL(_globals={"data": json_data})
             res = repl.run(code)
@@ -439,7 +437,7 @@ class ResponseParser(Chain):
                     "api_param": inputs["api_param"],
                     "response_description": inputs["response_description"],
                 }
-            )
+            ).content
 
         encoded_output = self.encoder.encode(output)
         if len(encoded_output) > self.max_output_length:

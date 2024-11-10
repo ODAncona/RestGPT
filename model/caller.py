@@ -290,7 +290,10 @@ class Caller(Chain):
 
         api_plan = inputs["api_plan"]
         api_url = self.api_spec.servers[0]["url"]
-        matched_endpoints = get_matched_endpoint(self.api_spec, api_plan)
+
+        matched_endpoints = get_matched_endpoint(
+            self.api_spec, api_plan["result"]
+        )
         endpoint_docs_by_name = {
             name: docs for name, _, docs in self.api_spec.endpoints
         }
@@ -335,12 +338,6 @@ class Caller(Chain):
 
         while self._should_continue(iterations, time_elapsed):
             scratchpad = self._construct_scratchpad(intermediate_steps)
-            # caller_chain_output = caller_chain.run(
-            #     api_plan=api_plan,
-            #     background=inputs["background"],
-            #     agent_scratchpad=scratchpad,
-            #     stop=self._stop,
-            # )
             caller_chain_output = caller_chain.invoke(
                 {
                     "api_plan": api_plan,
@@ -348,7 +345,7 @@ class Caller(Chain):
                     "agent_scratchpad": scratchpad,
                     "stop": self._stop,
                 }
-            )
+            ).content
             logger.info(f"Caller: {caller_chain_output}")
 
             action, action_input = self._get_action_and_input(
@@ -408,11 +405,13 @@ class Caller(Chain):
                     else "No request body"
                 ),
             }
-            parsing_res = response_parser.run(
-                query=query,
-                response_description=desc,
-                api_param=params_or_data,
-                json=response,
+            parsing_res = response_parser.invoke(
+                {
+                    "query": query,
+                    "response_description": desc,
+                    "api_param": params_or_data,
+                    "json": response,
+                }
             )
             logger.info(f"Parser: {parsing_res}")
 

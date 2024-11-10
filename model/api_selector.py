@@ -134,12 +134,6 @@ class APISelector(Chain):
             },
             input_variables=["plan", "background", "agent_scratchpad"],
         )
-        # super().__init__(
-        #     llm=llm,
-        #     api_spec=api_spec,
-        #     scenario=scenario,
-        #     api_selector_prompt=api_selector_prompt,
-        # )
         init_args = {
             "llm": llm,
             "api_spec": api_spec,
@@ -200,17 +194,7 @@ class APISelector(Chain):
             )
         else:
             scratchpad = ""
-        # api_selector_chain = LLMChain(
-        #     llm=self.llm, prompt=self.api_selector_prompt
-        # )
         api_selector_chain = self.api_selector_prompt | self.llm
-
-        # api_selector_chain_output = api_selector_chain.run(
-        #     plan=inputs["plan"],
-        #     background=inputs["background"],
-        #     agent_scratchpad=scratchpad,
-        #     stop=self._stop,
-        # )
         api_selector_chain_output = api_selector_chain.invoke(
             {
                 "plan": inputs["plan"],
@@ -221,7 +205,7 @@ class APISelector(Chain):
         )
 
         api_plan = re.sub(
-            r"API calling \d+: ", "", api_selector_chain_output
+            r"API calling \d+: ", "", api_selector_chain_output.content
         ).strip()
 
         logger.info(f"API Selector: {api_plan}")
@@ -235,17 +219,19 @@ class APISelector(Chain):
                 "API Selector: The API you called is not in the list of available APIs. Please use another API."
             )
             scratchpad += (
-                api_selector_chain_output
+                api_selector_chain_output.content
                 + "\nThe API you called is not in the list of available APIs. Please use another API.\n"
             )
-            api_selector_chain_output = api_selector_chain.run(
-                plan=inputs["plan"],
-                background=inputs["background"],
-                agent_scratchpad=scratchpad,
-                stop=self._stop,
+            api_selector_chain_output = api_selector_chain.invoke(
+                {
+                    "plan": inputs["plan"],
+                    "background": inputs["background"],
+                    "agent_scratchpad": scratchpad,
+                    "stop": self._stop,
+                }
             )
             api_plan = re.sub(
-                r"API calling \d+: ", "", api_selector_chain_output
+                r"API calling \d+: ", "", api_selector_chain_output.content
             ).strip()
             logger.info(f"API Selector: {api_plan}")
 

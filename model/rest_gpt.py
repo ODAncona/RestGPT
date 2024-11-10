@@ -59,17 +59,6 @@ class RestGPT(Chain):
             llm=llm, scenario=scenario, api_spec=api_spec
         )
 
-        # super().__init__(
-        #     llm=llm,
-        #     api_spec=api_spec,
-        #     planner=planner,
-        #     api_selector=api_selector,
-        #     scenario=scenario,
-        #     requests_wrapper=requests_wrapper,
-        #     simple_parser=simple_parser,
-        #     callbacks=callback_manager,
-        #     **kwargs,
-        # )
         init_args = {
             "llm": llm,
             "api_spec": api_spec,
@@ -167,7 +156,10 @@ class RestGPT(Chain):
         time_elapsed = 0.0
         start_time = time.time()
 
-        plan = self.planner.invoke({"input": query, "history": planner_history})
+        plan_result = self.planner.invoke(
+            {"input": query, "history": planner_history}
+        )
+        plan = plan_result["result"]
         logger.info(f"Planner: {plan}")
 
         while self._should_continue(iterations, time_elapsed):
@@ -182,8 +174,7 @@ class RestGPT(Chain):
                     "background": api_selector_background,
                 }
             )
-
-            finished = re.match(r"No API call needed.(.*)", api_plan)
+            finished = re.match(r"No API call needed.(.*)", api_plan["result"])
             if not finished:
                 executor = Caller(
                     llm=self.llm,
@@ -197,7 +188,7 @@ class RestGPT(Chain):
                         "api_plan": api_plan,
                         "background": api_selector_background,
                     }
-                )
+                )["result"]
             else:
                 execution_res = finished.group(1)
 
@@ -206,14 +197,14 @@ class RestGPT(Chain):
 
             plan = self.planner.invoke(
                 {"input": query, "history": planner_history}
-            )
+            )["result"]
             logger.info(f"Planner: {plan}")
 
             while self._should_continue_plan(plan):
                 api_selector_background = self._get_api_selector_background(
                     planner_history
                 )
-                api_plan = self.api_selector.invoke(
+                api_plan_result = self.api_selector.invoke(
                     {
                         "plan": tmp_planner_history[0],
                         "background": api_selector_background,
@@ -221,6 +212,7 @@ class RestGPT(Chain):
                         "instruction": plan,
                     }
                 )
+                api_plan = api_plan_result["result"]
 
                 finished = re.match(r"No API call needed.(.*)", api_plan)
                 if not finished:
@@ -236,7 +228,7 @@ class RestGPT(Chain):
                             "api_plan": api_plan,
                             "background": api_selector_background,
                         }
-                    )
+                    ).result
                 else:
                     execution_res = finished.group(1)
 

@@ -1,12 +1,11 @@
 import os
 import json
 import logging
-import datetime
 import time
 import yaml
 
 import spotipy
-from langchain_community.utilities import Requests, RequestsWrapper
+from langchain_community.utilities import RequestsWrapper
 
 # from langchain import OpenAI
 from langchain_openai import ChatOpenAI

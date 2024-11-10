@@ -147,7 +147,6 @@ class Planner(Chain):
 
     def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
         scratchpad = self._construct_scratchpad(inputs["history"])
-        # print("Scrachpad: \n", scratchpad)
         planner_prompt = PromptTemplate(
             template=self.planner_prompt,
             partial_variables={
@@ -164,8 +163,7 @@ class Planner(Chain):
                 "stop": self._stop,
             },  # Pass stop within inputs
             RunnableConfig(tags=["stop-handling"]),
-        )
-
+        ).content
         planner_chain_output = re.sub(
             r"Plan step \d+: ", "", planner_chain_output
         ).strip()
