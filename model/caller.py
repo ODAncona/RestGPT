@@ -1,12 +1,12 @@
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 from copy import deepcopy
 import yaml
 import time
 import re
 import requests
-
+from pydantic import Field
 import tiktoken
 
 from langchain.chains.base import Chain
@@ -121,7 +121,7 @@ class Caller(Chain):
     max_iterations: Optional[int] = 15
     max_execution_time: Optional[float] = None
     early_stopping_method: str = "force"
-    simple_parser: bool = False
+    parser_class: Type[Chain] = ResponseParser
     with_response: bool = False
     output_key: str = "result"
 
@@ -131,24 +131,16 @@ class Caller(Chain):
         api_spec: ReducedOpenAPISpec,
         scenario: str,
         requests_wrapper: TextRequestsWrapper,
-        simple_parser: bool = False,
+        parser_class: Type[Chain] = ResponseParser,
         with_response: bool = False,
         **kwargs: Any,
     ) -> None:
-        # super().__init__(
-        #     llm=llm,
-        #     api_spec=api_spec,
-        #     scenario=scenario,
-        #     requests_wrapper=requests_wrapper,
-        #     simple_parser=simple_parser,
-        #     with_response=with_response,
-        # )
         init_args = {
             "llm": llm,
             "api_spec": api_spec,
             "scenario": scenario,
             "requests_wrapper": requests_wrapper,
-            "simple_parser": simple_parser,
+            "parser_class": parser_class,
             "with_response": with_response,
             **kwargs,
         }
@@ -167,18 +159,15 @@ class Caller(Chain):
         return [self.output_key]
 
     def _should_continue(self, iterations: int, time_elapsed: float) -> bool:
-        if (
-            self.max_iterations is not None
-            and iterations >= self.max_iterations
-        ):
-            return False
-        if (
-            self.max_execution_time is not None
-            and time_elapsed >= self.max_execution_time
-        ):
-            return False
+        has_remaining_iterations = (
+            self.max_iterations is None or iterations < self.max_iterations
+        )
+        has_remaining_time = (
+            self.max_execution_time is None
+            or time_elapsed < self.max_execution_time
+        )
 
-        return True
+        return has_remaining_iterations and has_remaining_time
 
     @property
     def observation_prefix(self) -> str:
@@ -269,7 +258,7 @@ class Caller(Chain):
                 data["url"], params=params, json=request_body
             )
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"Unsupported action: {action}")
 
         if isinstance(response, requests.models.Response):
             if response.status_code != 200:
@@ -290,16 +279,19 @@ class Caller(Chain):
 
         api_plan = inputs["api_plan"]
         api_url = self.api_spec.servers[0]["url"]
-
+        # logger.info(f"API Plan: {api_plan}")
+        # logger.info(f"API URL: {api_url}")
         matched_endpoints = get_matched_endpoint(
             self.api_spec, api_plan["result"]
         )
+        if matched_endpoints is None:
+            raise ValueError(
+                f"Could not find a matching endpoint for the API plan: {api_plan}"
+            )
         endpoint_docs_by_name = {
             name: docs for name, _, docs in self.api_spec.endpoints
         }
         api_doc_for_caller = ""
-        print("CHIER")
-        logger.info(f"Matched endpoints: {matched_endpoints}")
         assert (
             len(matched_endpoints) == 1
         ), f"Found {len(matched_endpoints)} matched endpoints, but expected 1."
@@ -335,26 +327,31 @@ class Caller(Chain):
             input_variables=["api_plan", "background", "agent_scratchpad"],
         )
 
-        # caller_chain = LLMChain(llm=self.llm, prompt=caller_prompt)
+        # Initialize the first LLM chain
         caller_chain = caller_prompt | self.llm
 
         while self._should_continue(iterations, time_elapsed):
             scratchpad = self._construct_scratchpad(intermediate_steps)
+
+            # **First LLM Call:** Generate Operation and Input
             caller_chain_output = caller_chain.invoke(
                 {
                     "api_plan": api_plan,
-                    "background": inputs["background"],
+                    "background": inputs.get("background", ""),
                     "agent_scratchpad": scratchpad,
                     "stop": self._stop,
                 }
             ).content
             logger.info(f"Caller: {caller_chain_output}")
 
+            # Parse the operation and input
             action, action_input = self._get_action_and_input(
                 caller_chain_output
             )
             if action == "Execution Result":
                 return {"result": action_input}
+
+            # **Execute the API Call**
             response, params, request_body, desc, query = self._get_response(
                 action, action_input
             )
@@ -386,28 +383,19 @@ class Caller(Chain):
                     ]["schema"]["properties"][search_type]
                 }
 
-            if not self.simple_parser:
-                response_parser = ResponseParser(
-                    llm=self.llm,
-                    api_path=api_path,
-                    api_doc=api_doc_for_parser,
-                )
-            else:
-                response_parser = SimpleResponseParser(
-                    llm=self.llm,
-                    api_path=api_path,
-                    api_doc=api_doc_for_parser,
-                )
+            # **Parse the API Response**
+            api_response_parser = self.parser_class(
+                llm=self.llm,
+                api_path=api_path,
+                api_doc=api_doc_for_parser,
+            )
 
             params_or_data = {
-                "params": params if params is not None else "No parameters",
-                "data": (
-                    request_body
-                    if request_body is not None
-                    else "No request body"
-                ),
+                "params": params if params else "No parameters",
+                "data": request_body if request_body else "No request body",
             }
-            parsing_res = response_parser.invoke(
+
+            parsing_res = api_response_parser.invoke(
                 {
                     "query": query,
                     "response_description": desc,
@@ -415,8 +403,9 @@ class Caller(Chain):
                     "json": response,
                 }
             )
-            logger.info(f"Parser: {parsing_res}")
+            logger.info(f"Parser Output:\n{parsing_res}")
 
+            # Append to intermediate steps
             intermediate_steps.append(
                 (caller_chain_output, parsing_res["result"])
             )
