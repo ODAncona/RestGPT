@@ -7,7 +7,6 @@ import yaml
 import spotipy
 from langchain_community.utilities import RequestsWrapper
 
-# from langchain import OpenAI
 from langchain_openai import ChatOpenAI
 
 from utils import reduce_openapi_spec, ColorPrint

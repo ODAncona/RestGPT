@@ -298,6 +298,8 @@ class Caller(Chain):
             name: docs for name, _, docs in self.api_spec.endpoints
         }
         api_doc_for_caller = ""
+        print("CHIER")
+        logger.info(f"Matched endpoints: {matched_endpoints}")
         assert (
             len(matched_endpoints) == 1
         ), f"Found {len(matched_endpoints)} matched endpoints, but expected 1."
@@ -415,7 +417,9 @@ class Caller(Chain):
             )
             logger.info(f"Parser: {parsing_res}")
 
-            intermediate_steps.append((caller_chain_output, parsing_res))
+            intermediate_steps.append(
+                (caller_chain_output, parsing_res["result"])
+            )
 
             iterations += 1
             time_elapsed = time.time() - start_time
