@@ -1,6 +1,7 @@
 import time
 import re
 import logging
+from typing import Type
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -14,6 +15,7 @@ from langchain_community.utilities import RequestsWrapper
 from .planner import Planner
 from .api_selector import APISelector
 from .caller import Caller
+from .parser import ResponseParser
 from utils import ReducedOpenAPISpec
 
 
@@ -29,7 +31,7 @@ class RestGPT(Chain):
     api_selector: APISelector
     scenario: str = "tmdb"
     requests_wrapper: RequestsWrapper
-    simple_parser: bool = False
+    parser_class: Type[Chain] = ResponseParser
     return_intermediate_steps: bool = False
     max_iterations: Optional[int] = 15
     max_execution_time: Optional[float] = None
@@ -41,9 +43,7 @@ class RestGPT(Chain):
         api_spec: ReducedOpenAPISpec,
         scenario: str,
         requests_wrapper: RequestsWrapper,
-        caller_doc_with_response: bool = False,
-        parser_with_example: bool = False,
-        simple_parser: bool = False,
+        parser_class: Type[Chain] = ResponseParser,
         callback_manager: Optional[BaseCallbackManager] = None,
         **kwargs: Any,
     ) -> None:
@@ -66,7 +66,7 @@ class RestGPT(Chain):
             "api_selector": api_selector,
             "scenario": scenario,
             "requests_wrapper": requests_wrapper,
-            "simple_parser": simple_parser,
+            "parser_class": parser_class,
             "callback_manager": callback_manager,
             **kwargs,
         }
@@ -105,18 +105,15 @@ class RestGPT(Chain):
         return input()
 
     def _should_continue(self, iterations: int, time_elapsed: float) -> bool:
-        if (
-            self.max_iterations is not None
-            and iterations >= self.max_iterations
-        ):
-            return False
-        if (
-            self.max_execution_time is not None
-            and time_elapsed >= self.max_execution_time
-        ):
-            return False
+        has_remaining_iterations = (
+            self.max_iterations is None or iterations < self.max_iterations
+        )
+        has_remaining_time = (
+            self.max_execution_time is None
+            or time_elapsed < self.max_execution_time
+        )
 
-        return True
+        return has_remaining_iterations and has_remaining_time
 
     def _return(self, output, intermediate_steps: list) -> Dict[str, Any]:
         self.callback_manager.on_agent_finish(
@@ -180,7 +177,7 @@ class RestGPT(Chain):
                     llm=self.llm,
                     api_spec=self.api_spec,
                     scenario=self.scenario,
-                    simple_parser=self.simple_parser,
+                    parser_class=self.parser_class,
                     requests_wrapper=self.requests_wrapper,
                 )
                 execution_res = executor.invoke(
@@ -220,7 +217,7 @@ class RestGPT(Chain):
                         llm=self.llm,
                         api_spec=self.api_spec,
                         scenario=self.scenario,
-                        simple_parser=self.simple_parser,
+                        parser_class=self.parser_class,
                         requests_wrapper=self.requests_wrapper,
                     )
                     execution_res = executor.invoke(
