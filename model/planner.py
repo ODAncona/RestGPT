@@ -163,7 +163,7 @@ class Planner(Chain):
             {
                 "input": inputs["input"],
                 "stop": self._stop,
-            },  # Pass stop within inputs
+            },
             RunnableConfig(tags=["stop-handling"]),
         ).content
         planner_chain_output = re.sub(

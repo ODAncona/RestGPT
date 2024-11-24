@@ -132,14 +132,10 @@ class RestGPT(Chain):
         return "\n".join([step[1] for step in planner_history])
 
     def _should_continue_plan(self, plan) -> bool:
-        if re.search("Continue", plan):
-            return True
-        return False
+        return bool(re.search("Continue", plan))
 
     def _should_end(self, plan) -> bool:
-        if re.search("Final Answer", plan):
-            return True
-        return False
+        return bool(re.search("Final Answer", plan))
 
     def _call(
         self,
