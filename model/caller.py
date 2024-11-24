@@ -271,16 +271,8 @@ class Caller(Chain):
 
         return response_text, params, request_body, desc, query
 
-    def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
-        iterations = 0
-        time_elapsed = 0.0
-        start_time = time.time()
-        intermediate_steps: List[Tuple[str, str]] = []
-
-        api_plan = inputs["api_plan"]
+    def _prepare_api_docs(self, api_plan) -> Tuple[str, str]:
         api_url = self.api_spec.servers[0]["url"]
-        # logger.info(f"API Plan: {api_plan}")
-        # logger.info(f"API URL: {api_url}")
         matched_endpoints = get_matched_endpoint(
             self.api_spec, api_plan["result"]
         )
@@ -291,32 +283,44 @@ class Caller(Chain):
         endpoint_docs_by_name = {
             name: docs for name, _, docs in self.api_spec.endpoints
         }
-        api_doc_for_caller = ""
         assert (
             len(matched_endpoints) == 1
         ), f"Found {len(matched_endpoints)} matched endpoints, but expected 1."
         endpoint_name = matched_endpoints[0]
         tmp_docs = deepcopy(endpoint_docs_by_name.get(endpoint_name))
+
+        # Traitez les "responses" dans tmp_docs
         if "responses" in tmp_docs and "content" in tmp_docs["responses"]:
-            if "application/json" in tmp_docs["responses"]["content"]:
-                tmp_docs["responses"] = tmp_docs["responses"]["content"][
-                    "application/json"
-                ]["schema"]["properties"]
-            elif (
-                "application/json; charset=utf-8"
-                in tmp_docs["responses"]["content"]
-            ):
-                tmp_docs["responses"] = tmp_docs["responses"]["content"][
+            content = tmp_docs["responses"]["content"]
+            if "application/json" in content:
+                tmp_docs["responses"] = content["application/json"]["schema"][
+                    "properties"
+                ]
+            elif "application/json; charset=utf-8" in content:
+                tmp_docs["responses"] = content[
                     "application/json; charset=utf-8"
                 ]["schema"]["properties"]
         if not self.with_response and "responses" in tmp_docs:
             tmp_docs.pop("responses")
+
+        # Limitez la taille de tmp_docs
         tmp_docs = yaml.dump(tmp_docs)
         encoder = tiktoken.encoding_for_model("gpt-4o")
         encoded_docs = encoder.encode(tmp_docs)
         if len(encoded_docs) > 1500:
             tmp_docs = encoder.decode(encoded_docs[:1500])
-        api_doc_for_caller += f"== Docs for {endpoint_name} == \n{tmp_docs}\n"
+
+        api_doc_for_caller = f"== Docs for {endpoint_name} == \n{tmp_docs}\n"
+        return api_doc_for_caller, api_url
+
+    def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
+        iterations = 0
+        time_elapsed = 0.0
+        start_time = time.time()
+        intermediate_steps: List[Tuple[str, str]] = []
+
+        api_plan = inputs["api_plan"]
+        api_doc_for_caller, api_url = self._prepare_api_docs(api_plan)
 
         caller_prompt = PromptTemplate(
             template=CALLER_PROMPT,
