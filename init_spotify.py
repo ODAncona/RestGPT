@@ -4,7 +4,7 @@ import logging
 import yaml
 
 import spotipy.util as util
-from langchain.requests import Requests, RequestsWrapper
+from langchain_community.utilities import TextRequestsWrapper
 
 from utils import init_spotify
 
@@ -29,7 +29,7 @@ def main():
     access_token = util.prompt_for_user_token(scope=",".join(scopes))
     headers = {"Authorization": f"Bearer {access_token}"}
 
-    requests_wrapper = RequestsWrapper(headers=headers)
+    requests_wrapper = TextRequestsWrapper(headers=headers)
 
     init_spotify(requests_wrapper)
 
