@@ -201,7 +201,7 @@
     {
         "query": "What are the keywords of the most popular movie right now",
         "solution": [
-            " GET /movie/popular",
+            "GET /movie/popular",
             "GET /movie/{movie_id}/keywords"
         ]
     },

@@ -179,6 +179,10 @@ class APISelector(Chain):
             return ""
         scratchpad = ""
         for i, (plan, api_plan, execution_res) in enumerate(history):
+            logger.info(f"API Selector PLAN: {plan}")
+            logger.info(f"API Selector API PLAN: {api_plan}")
+            logger.info(f"API Selector EXECUTION: {execution_res}")
+
             if i != 0:
                 scratchpad += "Instruction: " + plan + "\n"
             scratchpad += self.llm_prefix.format(i + 1) + api_plan + "\n"

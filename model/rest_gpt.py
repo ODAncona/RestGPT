@@ -153,7 +153,6 @@ class RestGPT(Chain):
             {"input": query, "history": planner_history}
         )
         plan = plan_result["result"]
-        logger.info(f"Planner: {plan}")
 
         while self._should_continue(iterations, time_elapsed):
             tmp_planner_history = [plan]
@@ -166,8 +165,8 @@ class RestGPT(Chain):
                     "plan": plan,
                     "background": api_selector_background,
                 }
-            )
-            finished = re.match(r"No API call needed.(.*)", api_plan["result"])
+            )["result"]
+            finished = re.match(r"No API call needed.(.*)", api_plan)
             if not finished:
                 executor = Caller(
                     llm=self.llm,
@@ -204,10 +203,8 @@ class RestGPT(Chain):
                         "history": api_selector_history,
                         "instruction": plan,
                     }
-                )
-                finished = re.match(
-                    r"No API call needed.(.*)", api_plan["result"]
-                )
+                )["result"]
+                finished = re.match(r"No API call needed.(.*)", api_plan)
                 if not finished:
                     executor = Caller(
                         llm=self.llm,
@@ -233,7 +230,7 @@ class RestGPT(Chain):
                         "input": query,
                         "history": planner_history,
                     }
-                )
+                )["result"]
                 logger.info(f"Planner: {plan}")
 
             if self._should_end(plan):

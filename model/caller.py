@@ -6,7 +6,7 @@ import yaml
 import time
 import re
 import requests
-from pydantic import Field
+from pydantic import BaseModel, Field
 import tiktoken
 
 from langchain.chains.base import Chain
@@ -29,6 +29,45 @@ from .parser import ResponseParser, SimpleResponseParser
 logger = logging.getLogger(__name__)
 
 
+class Caller_Message(BaseModel):
+    """Caller message schema."""
+
+    api_plan: str = Field(..., title="API plan")
+    background: Optional[str] = Field(None, title="Background information")
+    agent_scratchpad: Optional[str] = Field(None, title="Agent scratchpad")
+
+
+icl_examples = [
+    """Operation: POST
+Input: {{
+'url': 'https://api.twitter.com/2/tweets',
+'params': {{
+    'tweet.fields': 'created_at'
+}}
+'data': {{
+    'text': 'Hello world!'
+}},
+'description': 'The API response is a twitter object.',
+'output_instructions': 'What is the id of the new twitter?'
+}}""",
+    """
+Operation: GET
+Input: {{
+    'url': 'https://api.themoviedb.org/3/person/5026/movie_credits',
+    'description': 'The API response is the movie credit list of Akira Kurosawa (id 5026)',
+    'output_instructions': 'What are the names and ids of the movies directed by this person?'
+}}""",
+    """
+Operation: PUT
+Input: {{
+    'url': 'https://api.spotify.com/v1/me/player/volume',
+    'params': {{
+        'volume_percent': '20'
+    }},
+    'description': 'Set the volume for the current playback device.'
+}}""",
+]
+
 CALLER_PROMPT = """You are an agent that gets a sequence of API calls and given their documentation, should execute them and return the final response.
 If you cannot complete them and run into issues, you should explain the issue. If you're able to resolve an API call, you can retry the API call. When interacting with API objects, you should extract ids for inputs to other API calls but ids and names for outputs returned to the User.
 Your task is to complete the corresponding api calls according to the plan.
@@ -50,37 +89,7 @@ If you are using GET method, add "params" key, and the value of "params" should 
 If you are using POST, PATCH or PUT methods, add "data" key, and the value of "data" should be a dict of key-value pairs.
 Remember to add a comma after every value except the last one, ensuring that the overall structure of the JSON remains valid.
 
-Example 1:
-Operation: POST
-Input: {{
-    "url": "https://api.twitter.com/2/tweets",
-    "params": {{
-        "tweet.fields": "created_at"
-    }}
-    "data": {{
-        "text": "Hello world!"
-    }},
-    "description": "The API response is a twitter object.",
-    "output_instructions": "What is the id of the new twitter?"
-}}
-
-Example 2:
-Operation: GET
-Input: {{
-    "url": "https://api.themoviedb.org/3/person/5026/movie_credits",
-    "description": "The API response is the movie credit list of Akira Kurosawa (id 5026)",
-    "output_instructions": "What are the names and ids of the movies directed by this person?"
-}}
-
-Example 3:
-Operation: PUT
-Input: {{
-    "url": "https://api.spotify.com/v1/me/player/volume",
-    "params": {{
-        "volume_percent": "20"
-    }},
-    "description": "Set the volume for the current playback device."
-}}
+{icl_examples}
 
 I will give you the background information and the plan you should execute.
 Background: background information which you can use to execute the plan, e.g., the id of a person.
@@ -273,9 +282,7 @@ class Caller(Chain):
 
     def _prepare_api_docs(self, api_plan) -> Tuple[str, str]:
         api_url = self.api_spec.servers[0]["url"]
-        matched_endpoints = get_matched_endpoint(
-            self.api_spec, api_plan["result"]
-        )
+        matched_endpoints = get_matched_endpoint(self.api_spec, api_plan)
         if matched_endpoints is None:
             raise ValueError(
                 f"Could not find a matching endpoint for the API plan: {api_plan}"
@@ -322,11 +329,15 @@ class Caller(Chain):
         api_plan = inputs["api_plan"]
         api_doc_for_caller, api_url = self._prepare_api_docs(api_plan)
 
+        # logger.info(f"API url: {api_url}")
+        # logger.info(f"API docs: {api_doc_for_caller}")
+
         caller_prompt = PromptTemplate(
             template=CALLER_PROMPT,
             partial_variables={
                 "api_url": api_url,
                 "api_docs": api_doc_for_caller,
+                "icl_examples": "\n".join(icl_examples),
             },
             input_variables=["api_plan", "background", "agent_scratchpad"],
         )
