@@ -15,7 +15,8 @@ class ColorPrint:
             "API Selector": Fore.YELLOW,
             "Caller": Fore.BLUE,
             "Parser": Fore.GREEN,
-            "Code": Fore.WHITE,
+            "Code": Fore.LIGHTGREEN_EX,
+            "HTTP Request": Fore.LIGHTBLACK_EX,
         }
 
     def write(self, data):

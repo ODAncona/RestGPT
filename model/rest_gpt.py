@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class RestGPT(Chain):
-    """Consists of an agent using tools."""
+    """Consists of an agent able to interact with APIs."""
 
     llm: BaseChatModel
     api_spec: ReducedOpenAPISpec
@@ -153,6 +153,7 @@ class RestGPT(Chain):
             {"input": query, "history": planner_history}
         )
         plan = plan_result["result"]
+        logger.info(f"Planner: {plan}")
 
         while self._should_continue(iterations, time_elapsed):
             tmp_planner_history = [plan]
