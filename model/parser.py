@@ -381,7 +381,7 @@ class ResponseParser(Chain):
                 }
             ).content
 
-        logger.info(f"Output: {output}")
+        # logger.info(f"Output: {output}")
 
         # Postprocess the output
         encoded_output = self.encoder.encode(output)
