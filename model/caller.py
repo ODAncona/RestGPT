@@ -296,6 +296,7 @@ class Caller(Chain):
         api_url = self.api_spec.servers[0]["url"]
         matched_endpoints = get_matched_endpoint(self.api_spec, api_plan)
         if matched_endpoints is None:
+            return "", ""
             raise ValueError(
                 f"Could not find a matching endpoint for the API plan: {api_plan}"
             )
@@ -378,22 +379,26 @@ class Caller(Chain):
         api_doc_for_parser = self.endpoint_docs_by_name.get(
             called_endpoint_name
         )
-        # if self.scenario == "spotify" and endpoint_name == "GET /search":
-        #     if params is not None and "type" in params:
-        #         search_type = params["type"] + "s"
-        #     else:
-        #         params_in_url = json.loads(action_input)["url"].split("&")
-        #         for param in params_in_url:
-        #             if "type=" in param:
-        #                 search_type = param.split("=")[-1] + "s"
-        #                 break
-        #     api_doc_for_parser["responses"]["content"]["application/json"][
-        #         "schema"
-        #     ]["properties"] = {
-        #         search_type: api_doc_for_parser["responses"]["content"][
-        #             "application/json"
-        #         ]["schema"]["properties"][search_type]
-        #     }
+
+        matched_endpoints = get_matched_endpoint(self.api_spec, api_plan)
+        endpoint_name = matched_endpoints[0]
+
+        if self.scenario == "spotify" and endpoint_name == "GET /search":
+            if params is not None and "type" in params:
+                search_type = params["type"] + "s"
+            else:
+                params_in_url = json.loads(action_input)["url"].split("&")
+                for param in params_in_url:
+                    if "type=" in param:
+                        search_type = param.split("=")[-1] + "s"
+                        break
+            api_doc_for_parser["responses"]["content"]["application/json"][
+                "schema"
+            ]["properties"] = {
+                search_type: api_doc_for_parser["responses"]["content"][
+                    "application/json"
+                ]["schema"]["properties"][search_type]
+            }
 
         # **Parse the API Response**
         api_response_parser = self.parser_class(

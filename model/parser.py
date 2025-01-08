@@ -357,17 +357,17 @@ class ResponseParser(Chain):
 
         # Code Parsing
         output = None
-        for size in [1000, 2000]:
-            if not output:
-                # Generate code and execute it
-                code = self._generate_code(inputs, inputs["json"])
-                encoded_json = self.encoder.encode(inputs["json"])
-                simplified_json_data = (
-                    self.encoder.decode(encoded_json[:size]) + "..."
-                )
-                output = self._execute_code(code, simplified_json_data)
-            if output:
-                break
+        # for size in [1000, 2000]:
+        #     if not output:
+        #         # Generate code and execute it
+        #         code = self._generate_code(inputs, inputs["json"])
+        #         encoded_json = self.encoder.encode(inputs["json"])
+        #         simplified_json_data = (
+        #             self.encoder.decode(encoded_json[:size]) + "..."
+        #         )
+        #         output = self._execute_code(code, simplified_json_data)
+        #     if output:
+        #         break
 
         # LLM Parsing
         if not output:
@@ -383,17 +383,20 @@ class ResponseParser(Chain):
 
         # logger.info(f"Output: {output}")
 
+        if self.encoder is None:
+            return {"result": output}
+
         # Postprocess the output
-        encoded_output = self.encoder.encode(output)
-        if len(encoded_output) > self.max_output_length:
-            output = self.encoder.decode(
-                encoded_output[: self.max_output_length]
-            )
-            logger.info(
-                f"Output too long, truncating to {self.max_output_length} tokens"
-            )
-            postprocess_chain = self.postprocess_prompt | self.llm
-            output = postprocess_chain.invoke({"truncated_str": output})
+        # encoded_output = self.encoder.encode(output)
+        # if len(encoded_output) > self.max_output_length:
+        #     output = self.encoder.decode(
+        #         encoded_output[: self.max_output_length]
+        #     )
+        #     logger.info(
+        #         f"Output too long, truncating to {self.max_output_length} tokens"
+        #     )
+        #     postprocess_chain = self.postprocess_prompt | self.llm
+        #     output = postprocess_chain.invoke({"truncated_str": output})
 
         return {"result": output}
 
