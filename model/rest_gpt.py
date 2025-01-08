@@ -135,7 +135,7 @@ class RestGPT(Chain):
         return bool(re.search("Continue", plan))
 
     def _should_end(self, plan) -> bool:
-        return bool(re.search("Final Answer", plan))
+        return bool(re.search("!!!End!!!", plan))
 
     def _call(
         self,
