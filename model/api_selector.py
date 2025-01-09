@@ -170,6 +170,7 @@ class APISelector(Chain):
             for endpoint in api_spec.endpoints
         ]
         api_name_desc = "\n".join(api_name_desc)
+        logger.info(f"API Name Description: {api_name_desc}")
         api_selector_prompt = PromptTemplate(
             template=API_SELECTOR_PROMPT,
             partial_variables={

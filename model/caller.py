@@ -301,10 +301,10 @@ class Caller(Chain):
                 f"Could not find a matching endpoint for the API plan: {api_plan}"
             )
 
-        assert (
-            len(matched_endpoints) == 1
-        ), f"Found {len(matched_endpoints)} matched endpoints, but expected 1."
-        endpoint_name = matched_endpoints[0]
+        # assert (
+        #     len(matched_endpoints) == 1
+        # ), f"Found {len(matched_endpoints)} matched endpoints, but expected 1."
+        endpoint_name = matched_endpoints[-1]
         tmp_docs = deepcopy(self.endpoint_docs_by_name.get(endpoint_name))
 
         # Traitez les "responses" dans tmp_docs

@@ -183,7 +183,7 @@ class ResponseParser(Chain):
     postprocess_prompt: PromptTemplate = None
     python_globals: Optional[Dict[str, Any]] = None
     python_locals: Optional[Dict[str, Any]] = None
-    encoder: tiktoken.Encoding = None
+    encoder: tiktoken.Encoding = tiktoken.encoding_for_model("gpt-4o")
     max_output_length: int = 500
     output_key: str = "result"
     return_intermediate_steps: bool = False
