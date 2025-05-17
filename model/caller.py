@@ -10,20 +10,15 @@ from pydantic import BaseModel, Field
 import tiktoken
 
 from langchain.chains.base import Chain
-
-# from langchain.chains.llm import LLMChain
-
 from langchain_community.utilities import TextRequestsWrapper
 from langchain_core.prompts import PromptTemplate
 from langchain_core.language_models import BaseChatModel
 
 from utils import (
-    simplify_json,
     get_matched_endpoint,
     ReducedOpenAPISpec,
-    fix_json_error,
 )
-from .parser import ResponseParser, SimpleResponseParser
+from .parser import ResponseParser
 
 
 logger = logging.getLogger(__name__)
@@ -67,27 +62,6 @@ Input: {{
     "description": "Set the volume for the current playback device."
 }}""",
 ]
-
-crap_save = """
-
-You should execute the plan faithfully and give the Final Answer as soon as you successfully call the planned APIs, don't get clever and make up steps that don't exist in the plan. Do not make up APIs that don't exist in the plan. For example, if the plan is "GET /search/person to search for the director "Lee Chang dong"", do not call "GET /person/{{person_id}}/movie_credits" to get the credit of the person.
-
-Starting below, you must follow this format:
-
-Background: background information which you can use to execute the plan, e.g., the id of a person.
-Plan: the plan of API calls to execute
-Thought: you should always think about what to do
-Operation: the request method to take, should be one of the following: GET, POST, DELETE, PATCH, PUT
-Input: the input to the operation
-Response: the output of the operation
-Thought: I am finished executing the plan (or, I cannot finish executing the plan without knowing some other information.)
-Execution Result: based on the API response, the execution result of the API calling plan.
-
-The execution result should satisfy the following conditions:
-1. The execution result must contain "Execution Result:" prompt.
-2. You should reorganize the response into natural language based on the plan. For example, if the plan is "GET /search/person to search for the director "Lee Chang dong"", the execution result should be "Successfully call GET /search/person to search for the director "Lee Chang dong". The id of Lee Chang dong is xxxx". Do not use pronouns if possible. For example, do not use "The id of this person is xxxx".
-3. If the plan includes expressions such as "most", you should choose the first item from the response. For example, if the plan is "GET /trending/tv/day to get the most trending TV show today", you should choose the first item from the response.
-4. The execution result should be natural language and as verbose as possible. It must contain the information needed in the plan."""
 
 CALLER_PROMPT = """You are an agent that gets an API calls and given their documentation, should execute them and return the final response.
 If you cannot complete them and run into issues, you should explain the issue. When interacting with API objects, you should extract ids for inputs to other API calls but ids and names for outputs returned to the User.

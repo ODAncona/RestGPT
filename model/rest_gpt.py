@@ -200,48 +200,6 @@ class RestGPT(Chain):
             )["result"]
             logger.info(f"Planner: {plan}")
 
-            # while self._should_continue_plan(plan):
-            #     api_selector_background = self._get_api_selector_background(
-            #         planner_history
-            #     )
-            #     api_plan = self.api_selector.invoke(
-            #         {
-            #             "plan": tmp_planner_history[0],
-            #             "background": api_selector_background,
-            #             "history": api_selector_history,
-            #             "instruction": plan,
-            #         }
-            #     )["result"]
-            #     finished = re.match(r"No API call needed.(.*)", api_plan)
-            #     if not finished:
-            #         executor = Caller(
-            #             llm=self.llm,
-            #             api_spec=self.api_spec,
-            #             scenario=self.scenario,
-            #             parser_class=self.parser_class,
-            #             requests_wrapper=self.requests_wrapper,
-            #         )
-            #         execution_res = executor.invoke(
-            #             {
-            #                 "api_plan": api_plan,
-            #                 "background": api_selector_background,
-            #             }
-            #         )["result"]
-            #     else:
-            #         execution_res = finished.group(1)
-
-            #     planner_history.append((plan, execution_res))
-            #     api_selector_history.append((plan, api_plan, execution_res))
-
-            #     plan = self.planner.invoke(
-            #         {
-            #             "input": query,
-            #             "history": planner_history,
-            #         }
-            #     )["result"]
-            #     logger.info({f"Planner HOHO: {planner_history}"})
-            #     logger.info(f"Planner HOHO: {plan}")
-
             if self._should_end(plan):
                 break
 

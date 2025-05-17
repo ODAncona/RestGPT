@@ -391,16 +391,16 @@ class ResponseParser(Chain):
             return {"result": output}
 
         # Postprocess the output
-        # encoded_output = self.encoder.encode(output)
-        # if len(encoded_output) > self.max_output_length:
-        #     output = self.encoder.decode(
-        #         encoded_output[: self.max_output_length]
-        #     )
-        #     logger.info(
-        #         f"Output too long, truncating to {self.max_output_length} tokens"
-        #     )
-        #     postprocess_chain = self.postprocess_prompt | self.llm
-        #     output = postprocess_chain.invoke({"truncated_str": output})
+        encoded_output = self.encoder.encode(output)
+        if len(encoded_output) > self.max_output_length:
+            output = self.encoder.decode(
+                encoded_output[: self.max_output_length]
+            )
+            logger.info(
+                f"Output too long, truncating to {self.max_output_length} tokens"
+            )
+            postprocess_chain = self.postprocess_prompt | self.llm
+            output = postprocess_chain.invoke({"truncated_str": output})
 
         return {"result": output}
 
