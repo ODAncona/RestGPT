@@ -6,11 +6,13 @@ import yaml
 
 import spotipy
 from langchain_community.utilities import RequestsWrapper
-
-from langchain_openai import ChatOpenAI
+from langchain_cerebras import ChatCerebras
 
 from utils import reduce_openapi_spec, ColorPrint
 from model import RestGPT
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger()
 
@@ -18,6 +20,7 @@ logger = logging.getLogger()
 def main():
     config = yaml.load(open("config.yaml", "r"), Loader=yaml.FullLoader)
     os.environ["OPENAI_API_KEY"] = config["openai_api_key"]
+    os.environ["CEREBRAS_API_KEY"] = config["cerebras_api_key"]
     os.environ["TMDB_ACCESS_TOKEN"] = config["tmdb_access_token"]
     os.environ["SPOTIPY_CLIENT_ID"] = config["spotipy_client_id"]
     os.environ["SPOTIPY_CLIENT_SECRET"] = config["spotipy_client_secret"]
@@ -38,7 +41,7 @@ def main():
 
         api_spec = reduce_openapi_spec(raw_tmdb_api_spec, only_required=False)
 
-        access_token = os.environ["TMDB_ACCESS_TOKEN"]
+        access_token = os.environ["TMDjB_ACCESS_TOKEN"]
         headers = {"Authorization": f"Bearer {access_token}"}
     elif scenario == "spotify":
         with open("specs/spotify_oas.json") as f:
@@ -62,7 +65,7 @@ def main():
 
     requests_wrapper = RequestsWrapper(headers=headers)
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.0, max_tokens=700)
+    llm = ChatCerebras(model="llama-3.3-70b", temperature=0.0, max_tokens=700)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,

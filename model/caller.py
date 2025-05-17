@@ -368,6 +368,7 @@ class Caller(Chain):
         response, params, request_body, desc, query = self._get_response(
             action, action_input
         )
+        response = response[:7500]
 
         called_endpoint_name = (
             action + " " + json.loads(action_input)["url"].replace(api_url, "")

@@ -5,16 +5,19 @@ import time
 import yaml
 
 from langchain_community.utilities import Requests, RequestsWrapper
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatCerebras
 
 from utils import reduce_openapi_spec, ColorPrint, MyRotatingFileHandler
 from model import RestGPT
 
 logger = logging.getLogger()
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def run(query, api_spec, requests_wrapper, simple_parser=False):
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.0, max_tokens=256)
+    llm = ChatCerebras(model="llama-3.3-70b", temperature=0.0, max_tokens=256)
     rest_gpt = RestGPT(
         llm,
         api_spec=api_spec,
